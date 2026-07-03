@@ -658,7 +658,7 @@ export const handleExecuteAction = async (ctx: Context) => {
    await handleSelectUser(ctx, action.replace("set", ""), fromPage);
 };
 
-export const handleBroadcastCommand = async (ctx: Context) => {
+export const handleBroadcast = async (ctx: Context) => {
    if (!ctx.message || !isTextMessage(ctx.message)) return;
 
    const text = ctx.message.text.replace("/broadcast", "").trim();
