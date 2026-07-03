@@ -10,14 +10,6 @@ export const USER_COMMANDS = [
       command: "profile",
       description: "👤 Lihat profil" 
    },
-   { 
-      command: "guide",   
-      description: "📖 Panduan penggunaan" 
-   },
-   { 
-      command: "help",    
-      description: "❓ Bantuan" 
-   },
    {
       command: "invite",
       description: "🎁 Dapatkan 15+ limit gratis"

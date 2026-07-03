@@ -15,3 +15,8 @@ export const isValidWhatsAppNumber = (number: string): string | null => {
 export const removePlusInNumber = (number: string): string => {
    return number.replace(/\+/g, "");
 }
+
+export const looksLikePhoneNumber = (text: string): boolean => {
+   const cleaned = text.replace(/\s+/g, "");
+   return /^\+?[0-9]{8,15}$/.test(cleaned);
+};

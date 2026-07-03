@@ -25,7 +25,7 @@ import {
    getAIConfig,
 } from "../services/userService";
 import messages from "../constants/messages";
-import { isValidWhatsAppNumber } from "./phoneValidate";
+import { isValidWhatsAppNumber, looksLikePhoneNumber } from "./phoneValidate";
 import { getFileUrl } from "./fileHelper";
 import { downloadFile } from "../services/stickerService";
 import fs from "fs";
@@ -151,6 +151,9 @@ export const handleTextMessage = async (ctx: Context) => {
       } else {
          ctx.reply("Klik /start", { parse_mode: "Markdown" });
       }
+   } else if (looksLikePhoneNumber(ctx.message.text)) {
+      ctx.reply(messages.invalidNumber, { parse_mode: "Markdown" });
+      return;
    } else {
       const aiConfig = await getAIConfig();
       if (!aiConfig.isTelegramAIEnabled) {
@@ -655,7 +658,7 @@ export const handleExecuteAction = async (ctx: Context) => {
    await handleSelectUser(ctx, action.replace("set", ""), fromPage);
 };
 
-export const handleBroadcast = async (ctx: Context) => {
+export const handleBroadcastCommand = async (ctx: Context) => {
    if (!ctx.message || !isTextMessage(ctx.message)) return;
 
    const text = ctx.message.text.replace("/broadcast", "").trim();
@@ -664,35 +667,11 @@ export const handleBroadcast = async (ctx: Context) => {
       return;
    }
 
-   const users = await getAllUsers();
-   let success = 0;
-   let failed = 0;
+   await ctx.reply("📤 Broadcast dimulai di background, kamu akan diberi tahu setelah selesai...");
 
-   await ctx.reply(`📤 Mengirim pesan ke ${users.length} user...`);
-
-   const BATCH_SIZE = 10;
-   const DELAY_BETWEEN_BATCH = 2000;
-
-   for (let i = 0; i < users.length; i += BATCH_SIZE) {
-      const batch = users.slice(i, i + BATCH_SIZE);
-
-      const results = await Promise.allSettled(
-         batch.map(user =>
-            ctx.telegram.sendMessage(user.telegramId, text, { parse_mode: "Markdown" })
-         )
-      );
-
-      results.forEach(r => {
-         if (r.status === "fulfilled") success++;
-         else failed++;
-      });
-
-      if (i + BATCH_SIZE < users.length) {
-         await new Promise(r => setTimeout(r, DELAY_BETWEEN_BATCH));
-      }
-   }
-
-   await ctx.reply(`✅ Selesai!\n\n📨 Berhasil: ${success}\n❌ Gagal: ${failed}`);
+   runBroadcast(ctx, text).catch((err) => {
+      console.error("Broadcast error:", err);
+   });
 };
 
 export const handleInvite = async (ctx: Context) => {
@@ -797,4 +776,34 @@ export const handleAIToggle = async (ctx: Context) => {
    } catch {
       ctx.reply(text, { parse_mode: "Markdown", ...keyboard });
    }
+};
+
+const runBroadcast = async (ctx: Context, text: string) => {
+   const users = await getAllUsers();
+   let success = 0;
+   let failed = 0;
+
+   const BATCH_SIZE = 10;
+   const DELAY_BETWEEN_BATCH = 2000;
+
+   for (let i = 0; i < users.length; i += BATCH_SIZE) {
+      const batch = users.slice(i, i + BATCH_SIZE);
+
+      const results = await Promise.allSettled(
+         batch.map(user =>
+            ctx.telegram.sendMessage(user.telegramId, text, { parse_mode: "Markdown" })
+         )
+      );
+
+      results.forEach(r => {
+         if (r.status === "fulfilled") success++;
+         else failed++;
+      });
+
+      if (i + BATCH_SIZE < users.length) {
+         await new Promise(r => setTimeout(r, DELAY_BETWEEN_BATCH));
+      }
+   }
+
+   await ctx.reply(`✅ Broadcast selesai!\n\n📨 Berhasil: ${success}\n❌ Gagal: ${failed}`);
 };
