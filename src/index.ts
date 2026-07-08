@@ -1,3 +1,6 @@
+import dns from "dns";
+dns.setDefaultResultOrder("ipv4first");
+
 import dotenv from "dotenv";
 dotenv.config();
 import { connectDB } from "./config/db";
@@ -14,5 +17,5 @@ const start = async () => {
 
    await User.updateMany({}, { $set: { isProcessing: false } });
 };
- 
+
 start();
