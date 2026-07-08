@@ -22,7 +22,13 @@ import {
 } from "../helpers/telegramHelper";
 import { adminOnly } from "../middleware/adminMiddleware";
 
-export const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN as string);
+export const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN as string, {
+   telegram: {
+      // laisse plus de marge qu'un timeout par defaut trop court
+      apiRoot: "https://api.telegram.org",
+   },
+   handlerTimeout: 90_000,
+});
 
 bot.start((ctx) => handleStart(ctx));
 bot.command("profile", (ctx) => handleProfile(ctx));
@@ -53,8 +59,20 @@ bot.catch((err, ctx) => {
    console.error(`[Bot Error] Update ${ctx.updateType}:`, err);
 });
 
-bot.launch()
-   .then(() => console.log("Bot Telegram berjalan..."))
-   .catch((err) => {
-      console.error("❌ Échec du lancement du bot Telegram:", err);
-   });
+const MAX_RETRY_DELAY_MS = 60_000;
+
+async function launchWithRetry(attempt = 1): Promise<void> {
+   try {
+      await bot.launch();
+      console.log("✅ Bot Telegram berjalan...");
+   } catch (err) {
+      const delay = Math.min(5_000 * attempt, MAX_RETRY_DELAY_MS);
+      console.error(
+         `❌ Échec du lancement du bot Telegram (tentative ${attempt}), nouvelle tentative dans ${delay / 1000}s :`,
+         err
+      );
+      setTimeout(() => launchWithRetry(attempt + 1), delay);
+   }
+}
+
+launchWithRetry();
