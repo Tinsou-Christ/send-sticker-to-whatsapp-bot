@@ -53,6 +53,8 @@ bot.catch((err, ctx) => {
    console.error(`[Bot Error] Update ${ctx.updateType}:`, err);
 });
 
-bot.launch();
-
-console.log("Bot Telegram berjalan...");
+bot.launch()
+   .then(() => console.log("Bot Telegram berjalan..."))
+   .catch((err) => {
+      console.error("❌ Échec du lancement du bot Telegram:", err);
+   });
